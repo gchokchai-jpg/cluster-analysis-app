@@ -3,89 +3,387 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BioCluster Analytics - PSU Pattani</title>
+    <title>BioCluster Analytics - โปรแกรมวิเคราะห์การจัดกลุ่ม</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/handsontable/12.4.0/handsontable.full.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/handsontable/12.4.0/handsontable.full.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+
     <style>
-        :root { --primary-color: #27ae60; --secondary-color: #2c3e50; --bg-color: #f4f7f6; }
-        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg-color); margin: 0; }
-        nav { background: var(--secondary-color); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; sticky: top; z-index: 100; }
-        nav a { color: white; text-decoration: none; margin-left: 20px; cursor: pointer; }
-        .container { max-width: 1100px; margin: 40px auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .page { display: none; } .active { display: block; }
-        .btn { background: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; }
-        #spreadsheet-container { margin: 20px 0; border: 1px solid #ccc; }
-        footer { text-align: center; padding: 30px; color: #666; }
+        :root {
+            --primary-color: #27ae60;
+            --secondary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--secondary-color);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        nav .logo { font-size: 1.5rem; font-weight: bold; }
+        nav .menu { display: flex; gap: 20px; }
+        nav a { color: white; text-decoration: none; font-weight: 500; cursor: pointer; transition: 0.3s; }
+        nav a:hover { color: var(--primary-color); }
+
+        .container { max-width: 1100px; margin: 40px auto; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
+
+        /* Home Page Styling */
+        .hero-section { text-align: center; padding-bottom: 40px; }
+        .hero-section h1 { color: var(--secondary-color); font-size: 2.5rem; margin-bottom: 10px; }
+        .intro-text { text-align: justify; text-indent: 50px; color: #555; font-size: 1.1rem; }
+        
+        .btn-start {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-decoration: none;
+            margin-top: 30px;
+            transition: 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-start:hover { transform: scale(1.05); background: #219150; box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3); }
+
+        /* Analysis Page Styling */
+        .section-title { border-left: 5px solid var(--primary-color); padding-left: 15px; margin-bottom: 25px; color: var(--secondary-color); }
+        .controls { background: #f9f9f9; padding: 20px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        .control-group label { font-size: 0.85rem; font-weight: bold; color: #666; }
+        select, .btn-action { height: 42px; border-radius: 6px; border: 1px solid #ddd; padding: 0 15px; font-family: inherit; }
+        .btn-action { border: none; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-run { background: var(--primary-color); }
+        .btn-matrix { background: var(--accent-color); }
+        .btn-clear { background: #e74c3c; }
+
+        #spreadsheet-container { margin: 20px 0; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
+        #dendrogram-container { background: white; border: 1px solid #eee; border-radius: 12px; margin-top: 30px; overflow: auto; min-height: 400px; }
+        
+        /* About Section */
+        .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 30px; }
+        .ref-list { font-size: 0.9rem; color: #666; }
+        .ref-list li { margin-bottom: 10px; }
+
+        footer { text-align: center; padding: 40px; color: #888; font-size: 0.9rem; }
+        .counter { margin-top: 15px; }
+
+        .page { display: none; }
+        .active { display: block; }
     </style>
 </head>
 <body>
 
 <nav>
-    <div style="font-weight:bold;">BioCluster Analytics</div>
-    <div>
+    <div class="logo">BioCluster Analytics</div>
+    <div class="menu">
         <a onclick="showPage('home')">หน้าแรก</a>
-        <a onclick="showPage('app')">โปรแกรมวิเคราะห์</a>
-        <a onclick="showPage('about')">ผู้พัฒนา</a>
+        <a onclick="showPage('analysis')">เริ่มวิเคราะห์</a>
+        <a onclick="showPage('about')">เกี่ยวกับโปรแกรม</a>
     </div>
 </nav>
 
 <div class="container">
+    
     <div id="home" class="page active">
-        <h1>การวิเคราะห์แบบกลุ่ม (Cluster Analysis)</h1>
-        <p style="text-indent: 50px; text-align: justify;">
-            การวิเคราะห์แบบกลุ่มเป็นวิธีวิเคราะห์เพื่อจัดหมวดหมู่สิ่งเป้าหมาย ซึ่งกระจัดกระจายให้อยู่กลุ่มเดียวกัน เริ่มจากกลุ่มย่อยๆ จนถึงกลุ่มใหญ่โดยอาศัยคุณสมบัติที่มีร่วมกัน เทคนิคนี้สามารถประยุกต์ใช้ในวิชาอนุกรมวิธานหรือชีววิทยา 
-        </p>
-        <button class="btn" onclick="showPage('app')">เข้าสู่โปรแกรมวิเคราะห์</button>
+        <div class="hero-section">
+            <h1>ยินดีต้อนรับสู่โปรแกรมวิเคราะห์การจัดกลุ่ม</h1>
+            <p style="font-size: 1.2rem; color: #7f8c8d;">การวิเคราะห์ความคล้ายคลึงเชิงชีววิทยาและนิเวศวิทยา</p>
+        </div>
+        
+        <div class="intro-text">
+            <p>
+                การวิเคราะห์แบบกลุ่ม (Cluster Analysis) เป็นเครื่องมือทางสถิติที่มีประสิทธิภาพในการจัดหมวดหมู่ข้อมูลที่กระจัดกระจายให้รวมอยู่ในกลุ่มเดียวกันตามความคล้ายคลึง โดยเริ่มจากการพิจารณาหน่วยที่เล็กที่สุดจนพัฒนาเป็นกลุ่มใหญ่ตามคุณสมบัติร่วมของข้อมูลนั้นๆ เทคนิคนี้ถูกนำมาประยุกต์ใช้อย่างแพร่หลายในวิชาอนุกรมวิธานและนิเวศวิทยา เพื่อช่วยแก้ไขปัญหาการจัดหมวดหมู่ที่ซับซ้อน เช่น การวิเคราะห์ลักษณะทางสรีระของพืชและสัตว์ หรือการแยกแยะกลุ่มประชากรตามลักษณะทางมานุษยวิทยา
+            </p>
+            <p>
+                ในกรณีที่ข้อมูลมีปริมาณมาก เช่น การศึกษาความสัมพันธ์ระหว่างสิ่งมีชีวิต 50 ชนิด จากลักษณะที่แตกต่างกันกว่า 100 รายการ การคำนวณด้วยมือเป็นเรื่องที่ทำได้ยากและเสี่ยงต่อความผิดพลาด โปรแกรมนี้จึงถูกพัฒนาขึ้นเพื่อช่วยให้นักวิจัยสามารถประมวลผลข้อมูลผ่านเทคนิคการจัดกลุ่มแบบ Single-linkage ร่วมกับดัชนีความเหมือน Bray-Curtis Similarity และระบบการแปลงข้อมูล (Data Transformation) โดยผลการวิเคราะห์จะถูกนำเสนอในรูปแบบของ "Dendrogram" หรือไดอะแกรมกิ่งต้นไม้ที่อ่านเข้าใจง่ายและแม่นยำ
+            </p>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="btn-start" onclick="showPage('analysis')">🚀 เข้าสู่โปรแกรมวิเคราะห์</button>
+        </div>
     </div>
 
-    <div id="app" class="page">
-        <h2>เครื่องมือวิเคราะห์ Cluster Analysis</h2>
-        <div style="margin-bottom:10px;">
-            <select id="transMode">
-                <option value="none">ไม่แปลงข้อมูล</option>
-                <option value="sqrt">Square root (√x)</option>
-                <option value="log">Log(x+1)</option>
-            </select>
-            <button class="btn" onclick="runAnalysis()">⚡ เริ่มคำนวณ</button>
+    <div id="analysis" class="page">
+        <h2 class="section-title">เครื่องมือวิเคราะห์ (Analysis Tool)</h2>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>แนวการวิเคราะห์</label>
+                <select id="analysisMode">
+                    <option value="columns">เปรียบเทียบสถานี (Columns)</option>
+                    <option value="rows">เปรียบเทียบชนิดสัตว์น้ำ (Rows)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>การแปลงข้อมูล (Transformation)</label>
+                <select id="transMode">
+                    <option value="none">None (x)</option>
+                    <option value="sqrt">Square root (√x)</option>
+                    <option value="4throot">Fourth root (∜x)</option>
+                    <option value="log">Log(x+1)</option>
+                </select>
+            </div>
+            <button class="btn-action btn-run" onclick="runAnalysis()">⚡ ประมวลผล</button>
+            <button class="btn-action btn-matrix" onclick="toggleMatrix()">📊 ดู Matrix</button>
+            <button class="btn-action btn-clear" onclick="clearTable()">🗑️ ล้างข้อมูล</button>
         </div>
+
         <div id="spreadsheet-container"></div>
-        <div id="dendrogram" style="background:#fff; min-height:400px; border:1px solid #eee;"></div>
+
+        <div id="matrix-container" style="display:none; margin-top: 20px; overflow-x: auto;">
+            <h4 id="matrix-title">Bray-Curtis Similarity Matrix (%)</h4>
+            <div id="matrix-table-wrapper"></div>
+        </div>
+
+        <div id="dendrogram-container">
+            <div id="dendrogram"></div>
+        </div>
+
+        <div id="downloadArea" style="display:none; text-align: center; margin-top: 20px;">
+            <button class="btn-action" style="background:#8e44ad;" onclick="downloadImage('png')">💾 บันทึกรูปภาพ (.PNG)</button>
+        </div>
     </div>
 
     <div id="about" class="page">
-        <h2>ผู้พัฒนาโปรแกรม</h2>
-        <p><strong>ผศ.ดร.โชคชัย เหลืองธุวปราณีต</strong></p>
-        <p>คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยสงขลานครินทร์ วิทยาเขตปัตตานี</p>
-        <p>Email: gchokchai@gmail.com </p>
+        <h2 class="section-title">เกี่ยวกับโปรแกรมและผู้พัฒนา</h2>
+        <div class="about-grid">
+            <div>
+                <h3>ผู้สร้างโปรแกรม</h3>
+                <p><strong>ผศ.ดร.โชคชัย เหลืองธุวปราณีต</strong></p>
+                <p>คณะวิทยาศาสตร์และเทคโนโลยี<br>มหาวิทยาลัยสงขลานครินทร์ วิทยาเขตปัตตานี</p>
+                <p>📧 ติดต่อ: <a href="mailto:gchokchai@gmail.com">gchokchai@gmail.com</a></p>
+            </div>
+            <div>
+                <h3>เอกสารอ้างอิง</h3>
+                <ul class="ref-list">
+                    <li>โชคชัย เหลืองธุวปราณีต. 2539. สถิติและโปรแกรมคอมพิวเตอร์สำหรับงานทดลอง. เอกสารประกอบการบรรยาย, ภาควิชาเทคโนโลยีและการอุตสาหกรรม, คณะวิทยาศาสตร์และเทคโนโลยี, มหาวิทยาลัยสงขลานครินทร์, วิทยาเขตปัตตานี.</li>
+                    <li>Davies, R.G. 1971. Computer Programming in Quantitative Biology. Academic Press, London and New York.</li>
+                </ul>
+            </div>
+        </div>
     </div>
+
 </div>
 
 <footer>
-    &copy; BioCluster Analytics - PSU Pattani
+    <p>&copy; 2024 BioCluster Analytics Web App - PSU Pattani</p>
+    <div class="counter">
+        <p>จำนวนผู้เข้าชม:</p>
+        <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fchokchai-cluster-app.github.io&count_bg=%2327AE60&title_bg=%232C3E50&icon=&icon_color=%23E7E7E7&title=Visitors&edge_flat=false" alt="Visitor Counter"/>
+    </div>
 </footer>
 
 <script>
-    function showPage(id) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    }
+// --- ส่วนการเปลี่ยนหน้า ---
+function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
 
-    // ส่วนของตาราง Handsontable 
-    let hot;
-    document.addEventListener('DOMContentLoaded', () => {
-        const container = document.getElementById('spreadsheet-container');
-        hot = new Handsontable(container, {
-            data: Array.from({length: 20}, () => Array(10).fill('')),
-            rowHeaders: true, colHeaders: true, height: 300, licenseKey: 'non-commercial-and-evaluation'
-        });
+// --- ส่วนโปรแกรมวิเคราะห์ (Logic จาก V7) ---
+let hot;
+let globalSimMat = [];
+let globalNames = [];
+
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.getElementById('spreadsheet-container');
+    const initialData = Array.from({ length: 30 }, () => Array(15).fill(''));
+    initialData[0][1] = 'St.1'; initialData[0][2] = 'St.2'; initialData[0][3] = 'St.3';
+    initialData[1][0] = 'Species_A';
+
+    hot = new Handsontable(container, {
+        data: initialData,
+        colHeaders: true, rowHeaders: true,
+        width: '100%', height: 350,
+        licenseKey: 'non-commercial-and-evaluation',
+        manualColumnResize: true, manualRowResize: true,
+        fixedRowsTop: 1, fixedColumnsLeft: 1
     });
+});
 
-    function runAnalysis() {
-        alert("กำลังประมวลผล... (ระบบจะวาด Dendrogram ด้านล่าง)");
-        // ฟังก์ชันวาด Dendrogram จะทำงานที่นี่เหมือนใน slca-fixed 
+function clearTable() {
+    if(confirm("ล้างข้อมูลทั้งหมด?")) {
+        hot.loadData(Array.from({ length: 30 }, () => Array(15).fill('')));
+        d3.select("#dendrogram").html("");
+        document.getElementById('matrix-container').style.display = 'none';
+        document.getElementById('downloadArea').style.display = 'none';
     }
+}
+
+function transformValue(val, mode) {
+    if (isNaN(val) || val <= 0) return 0;
+    switch(mode) {
+        case 'sqrt': return Math.sqrt(val);
+        case '4throot': return Math.pow(val, 0.25);
+        case 'log': return Math.log10(val + 1);
+        default: return val;
+    }
+}
+
+function calculateBrayCurtis(vecA, vecB) {
+    let sumDiff = 0, sumTotal = 0;
+    let len = Math.max(vecA.length, vecB.length);
+    for (let i = 0; i < len; i++) {
+        let a = vecA[i] || 0, b = vecB[i] || 0;
+        sumDiff += Math.abs(a - b);
+        sumTotal += (a + b);
+    }
+    return sumTotal === 0 ? 0 : (1 - (sumDiff / sumTotal)) * 100;
+}
+
+function runAnalysis() {
+    const rawData = hot.getData();
+    const mode = document.getElementById('analysisMode').value;
+    const trans = document.getElementById('transMode').value;
+    let items = [];
+
+    if (mode === 'columns') {
+        for (let j = 1; j < rawData[0].length; j++) {
+            let name = rawData[0][j] ? String(rawData[0][j]).trim().substring(0, 15) : "";
+            if (!name) continue;
+            let vals = [];
+            for(let i = 1; i < rawData.length; i++) vals.push(transformValue(parseFloat(rawData[i][j]), trans));
+            items.push({ id: name, values: vals });
+        }
+    } else {
+        for (let i = 1; i < rawData.length; i++) {
+            let name = rawData[i][0] ? String(rawData[i][0]).trim().substring(0, 15) : "";
+            if (!name) continue;
+            let vals = [];
+            for(let j = 1; j < rawData[i].length; j++) vals.push(transformValue(parseFloat(rawData[i][j]), trans));
+            items.push({ id: name, values: vals });
+        }
+    }
+
+    if (items.length < 2) return alert("กรุณากรอกข้อมูลในตาราง");
+
+    globalNames = items.map(d => d.id);
+    let simMat = items.map((itA, i) => items.map((itB, j) => (i===j) ? 100 : calculateBrayCurtis(itA.values, itB.values)));
+    globalSimMat = simMat;
+    
+    renderMatrixTable();
+    
+    let clusters = items.map((d, i) => ({ id: d.id, index: i, height: 100 }));
+    let dists = simMat.map(row => row.map(v => 100 - v));
+    for(let i=0; i<dists.length; i++) dists[i][i] = Infinity;
+
+    const resultTree = performClustering(clusters, dists);
+    drawDendrogram(resultTree);
+    document.getElementById('downloadArea').style.display = 'block';
+}
+
+function performClustering(nodes, dists) {
+    let current = [...nodes];
+    let nextIdx = nodes.length;
+    while (current.length > 1) {
+        let minD = Infinity, a = -1, b = -1;
+        for (let i = 0; i < current.length; i++) {
+            for (let j = i + 1; j < current.length; j++) {
+                if (dists[current[i].index][current[j].index] < minD) {
+                    minD = dists[current[i].index][current[j].index]; a = i; b = j;
+                }
+            }
+        }
+        let newNode = { id: 'Node' + nextIdx++, height: 100 - minD, children: [current[a], current[b]], index: current[a].index };
+        let idxA = current[a].index, idxB = current[b].index;
+        for (let k = 0; k < dists.length; k++) {
+            let newVal = Math.min(dists[idxA][k], dists[idxB][k]);
+            dists[idxA][k] = dists[k][idxA] = newVal;
+        }
+        current.splice(b, 1); current.splice(a, 1, newNode);
+    }
+    return current[0];
+}
+
+function renderMatrixTable() {
+    let html = '<table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:center;">';
+    html += '<thead><tr style="background:#eee;"><th></th>' + globalNames.map(n => `<th>${n}</th>`).join('') + '</tr></thead><tbody>';
+    for (let i = 0; i < globalNames.length; i++) {
+        html += `<tr><th style="background:#f9f9f9;">${globalNames[i]}</th>`;
+        for (let j = 0; j < globalNames.length; j++) {
+            let val = globalSimMat[i][j].toFixed(2);
+            html += `<td style="border:1px solid #ddd; padding:5px;">${val}%</td>`;
+        }
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+    document.getElementById('matrix-table-wrapper').innerHTML = html;
+}
+
+function toggleMatrix() {
+    const el = document.getElementById('matrix-container');
+    el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+}
+
+function drawDendrogram(data) {
+    const width = 800;
+    const margin = { top: 20, right: 150, bottom: 50, left: 50 };
+    const root = d3.hierarchy(data);
+    const numLeaves = root.leaves().length;
+    const dynamicHeight = Math.max(400, numLeaves * 25);
+
+    d3.select("#dendrogram").html("");
+    const svg = d3.select("#dendrogram").append("svg").attr("width", width).attr("height", dynamicHeight).style("background", "white");
+    const cluster = d3.cluster().size([dynamicHeight - margin.top - margin.bottom, width - margin.left - margin.right]);
+    cluster(root);
+
+    const xScale = d3.scaleLinear().domain([0, 100]).range([0, width - margin.left - margin.right]);
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    g.selectAll(".link").data(root.links()).enter().append("path")
+        .attr("fill", "none").attr("stroke", "#95a5a6").attr("stroke-width", 2)
+        .attr("d", d => `M${xScale(d.source.data.height)},${d.source.x} V${d.target.x} H${xScale(d.target.data.height)}`);
+
+    const node = g.selectAll(".node").data(root.leaves()).enter().append("g")
+        .attr("transform", d => `translate(${xScale(d.data.height)},${d.x})`);
+
+    node.append("circle").attr("r", 4).attr("fill", "#27ae60");
+    node.append("text").attr("dx", 10).attr("dy", 4).text(d => d.data.id).style("font-size", "12px").style("font-weight", "bold");
+
+    g.append("g").attr("transform", `translate(0,${dynamicHeight - margin.top - margin.bottom})`)
+        .call(d3.axisBottom(xScale)).append("text").attr("x", (width-margin.left-margin.right)/2).attr("y", 40).attr("fill", "#000").text("Bray-Curtis Similarity (%)");
+}
+
+function downloadImage(format) {
+    const svg = document.querySelector("#dendrogram svg");
+    const xml = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const img = new Image();
+    img.onload = function() {
+        canvas.width = svg.clientWidth * 2; canvas.height = svg.clientHeight * 2;
+        const ctx = canvas.getContext("2d"); ctx.scale(2,2);
+        ctx.fillStyle = "white"; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img, 0, 0);
+        const a = document.createElement("a"); a.href = canvas.toDataURL("image/png"); a.download = "dendrogram.png"; a.click();
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
+}
 </script>
+
 </body>
 </html>
